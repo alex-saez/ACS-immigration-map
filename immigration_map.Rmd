@@ -24,10 +24,10 @@ library(plotly)
 
 
 ```{r, message=FALSE, include=FALSE}
-Load data and select variables:
-selected.variables = c("NATIVITY","ST","POBP")
-hus.a.data = fread("../data/ss14pusa.csv", select = selected.variables)
-hus.b.data = fread("../data/ss14pusb.csv", select = selected.variables)
+# Load data and select variables:
+selected.variables = c("NATIVITY","ST","POBP", "PWGTP")
+hus.a.data = fread("./data/ss14pusa.csv", select = selected.variables)
+hus.b.data = fread("./data/ss14pusb.csv", select = selected.variables)
 db = rbind(hus.a.data, hus.b.data)
 rm(hus.a.data, hus.b.data)
 
@@ -40,12 +40,12 @@ rm(hus.a.data, hus.b.data)
 ```{r, message=FALSE, include=FALSE}
 # Get country names and state abbreviations:
 
-countries = fread("../data/countrynames.csv")
+countries = fread("./data/countrynames.csv")
 db = db %>% 
     left_join(., countries, by = c("POBP" = "code")) %>%
     rename(COB_name = name)
 
-states = fread("../data/statenames.csv")
+states = fread("./data/statenames.csv")
 db = db %>% 
     left_join(., states, by = c("ST" = "code")) %>% 
     rename(ST_abbr = abbr) %>% 
@@ -76,7 +76,7 @@ top_countries = db %>%
 
 | Rank |   |Country | Immigrant Population|
 |------|---|--------|---------------------|
-`r paste('|', 1:top_n, '|', paste('![](../data/Flags/24/',top_countries[[1]],'.png)', sep=''), '|', top_countries[[1]], '|', round(top_countries[[2]]/1e6, 3), 'M', '|', '\n', collapse='')`
+`r paste('|', 1:top_n, '|', paste('![](./data/Flags/24/',top_countries[[1]],'.png)', sep=''), '|', top_countries[[1]], '|', round(top_countries[[2]]/1e6, 3), 'M', '|', '\n', collapse='')`
 ###### (Icons: <http://www.icondrawer.com>)
 
 
