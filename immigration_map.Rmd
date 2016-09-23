@@ -1,0 +1,160 @@
+---
+title: "Immigrant map of the United States"
+output:
+  html_document: default
+  html_notebook: default
+  pdf_document: default
+---
+\
+\
+\
+
+
+ **Here we conduct  a brief study of the foreign-born population in the United States based on the American Community Survey (ACS) published by the Census Bureau. We use the person-level data published for 2014, which includes 3,134,610 individuals. We focus on the foreign-born population, identified using the "NATIVITY" variable in the data, which consists of 360,677 individuals.** 
+\
+\
+
+
+```{r libraries, message=FALSE, include=FALSE}
+# Load libraries:
+library(dplyr)
+library(data.table)
+library(plotly)
+```
+
+
+```{r, message=FALSE, include=FALSE}
+Load data and select variables:
+selected.variables = c("NATIVITY","ST","POBP")
+hus.a.data = fread("../data/ss14pusa.csv", select = selected.variables)
+hus.b.data = fread("../data/ss14pusb.csv", select = selected.variables)
+db = rbind(hus.a.data, hus.b.data)
+rm(hus.a.data, hus.b.data)
+
+# save(db, file = "../data/db.RData")
+# load("../data/db.RData")
+```
+
+
+
+```{r, message=FALSE, include=FALSE}
+# Get country names and state abbreviations:
+
+countries = fread("../data/countrynames.csv")
+db = db %>% 
+    left_join(., countries, by = c("POBP" = "code")) %>%
+    rename(COB_name = name)
+
+states = fread("../data/statenames.csv")
+db = db %>% 
+    left_join(., states, by = c("ST" = "code")) %>% 
+    rename(ST_abbr = abbr) %>% 
+    select(-c(name))
+
+statenames = states$name
+names(statenames) = states$abbr
+
+# remove DC and Puerto Rico rows:
+db = filter(db, !ST_abbr %in% c('DC','PR'))
+statenames = statenames[!statenames %in% c('District of Columbia','Puerto Rico')]
+```
+
+
+```{r, message=FALSE, include=FALSE}
+# Find top countries of immigration:
+top_n = 20 # the top how many countries of immigration
+top_countries = db %>% 
+                filter(NATIVITY==2) %>%
+                group_by(COB_name) %>%
+                summarise(sum(PWGTP)) %>%
+                arrange(desc(`sum(PWGTP)`)) %>%
+                head(top_n)
+```
+
+
+### Top `r top_n` countries of origin for immigrants in the United States:
+
+| Rank |   |Country | Immigrant Population|
+|------|---|--------|---------------------|
+`r paste('|', 1:top_n, '|', paste('![](../data/Flags/24/',top_countries[[1]],'.png)', sep=''), '|', top_countries[[1]], '|', round(top_countries[[2]]/1e6, 3), 'M', '|', '\n', collapse='')`
+###### (Icons: <http://www.icondrawer.com>)
+
+
+```{r, message=FALSE, include=FALSE}
+# Estimate percent immigrant in state poulation:
+
+pop_total = db %>% group_by(ST_abbr) %>% summarise(sum(PWGTP)) %>% rename(tot = `sum(PWGTP)`)
+pct_imm_by_st_df = db %>% 
+                  filter(NATIVITY==2) %>% 
+                  group_by(ST_abbr) %>% 
+                  summarise(sum(PWGTP)) %>% 
+                  mutate(percent_imm = round(100*`sum(PWGTP)`/pop_total$tot, 1)) %>%
+                  select(-`sum(PWGTP)`)
+
+pct_imm_by_st = pct_imm_by_st_df$percent_imm
+names(pct_imm_by_st) = pct_imm_by_st_df$ST_abbr
+```
+
+
+
+```{r, message=FALSE, include=FALSE}
+# For each US state, get top countries of immigration:
+top_n_st = 5 # the top how many countries of immigration to display
+top_countries = list()
+for(s in unique(db$ST_abbr)){
+  state_rows = filter(db, ST_abbr==s & NATIVITY==2) # select only immigrants in state s
+  top_countries[[s]] = state_rows %>%
+                      group_by(COB_name) %>%
+                      summarise(sum(PWGTP)) %>%
+                      mutate(pct = round(100* `sum(PWGTP)` /sum(state_rows$PWGTP), 1)) %>%
+                      select(-`sum(PWGTP)`) %>%
+                      arrange(desc(pct)) %>%
+                      head(top_n_st)
+}
+```
+\
+\
+
+
+### Geographic distribution of immigrant groups:
+\
+\
+```{r, message=FALSE, echo=FALSE}
+# Display map:
+
+nstates = length(top_countries)
+hover = character(nstates)
+percent_imm = numeric(nstates)
+
+# prepare list for display of top countries of immigration:
+for(i in names(statenames)){
+  hover[i] = paste('<b>', statenames[i], ' ', pct_imm_by_st[i], '%</b>, of which:<br>',
+                    paste('  ',top_countries[[i]]$COB_name, ' ', top_countries[[i]]$pct, '% <br>', collapse=""),
+                    collapse="")
+  percent_imm[i] = pct_imm_by_st[i]
+}
+
+# combine all in data frame for plotting
+state_imm = data.frame(code = names(statenames), hover = hover, percent_imm = percent_imm, stringsAsFactors=FALSE)
+
+# give state boundaries a white border
+l = list(color = toRGB("white"), width = 2)
+
+# specify some map projection/options
+g = list(scope = 'usa', projection = list(type = 'albers usa'), showlakes = TRUE, lakecolor = toRGB('white'))
+
+plot_ly(state_imm, type = 'choropleth', z = percent_imm, 
+        locationmode = 'USA-states', locations = code, 
+        hoverinfo = 'text', text = hover, 
+        color = percent_imm, colors = 'Oranges',
+        marker = list(line = l), 
+        colorbar = list(len = 0.75, thickness = 20, title = "Percent foreign-born")) %>%
+  
+  layout(geo = g, 
+         title = 'Percent foreign-born per state and top countries of origin <br> (hover cursor over map for breakdown)', 
+         autosize = FALSE,
+         width = 900,
+         margin = list(t=25, l=0, r=0, d=0))
+
+```
+
