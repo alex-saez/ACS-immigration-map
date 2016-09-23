@@ -10,7 +10,7 @@ output:
 \
 
 
- ** We look at the top countries of origin for foreign-born individuals in the United States. We use data from the American Community Survey (ACS) published by the Census Bureau.** 
+ **We look at the top countries of origin for foreign-born individuals in the United States. We use data from the American Community Survey (ACS) published by the Census Bureau.** 
 \
 \
 
@@ -31,7 +31,7 @@ hus.b.data = fread("./data/ss14pusb.csv", select = selected.variables)
 db = rbind(hus.a.data, hus.b.data)
 rm(hus.a.data, hus.b.data)
 
-# save(db, file = "../data/db.RData")
+# save(db, file = "./data/db.RData")
 # load("../data/db.RData")
 ```
 
