@@ -10,7 +10,7 @@ output:
 \
 
 
- **Here we conduct  a brief study of the foreign-born population in the United States based on the American Community Survey (ACS) published by the Census Bureau. We use the person-level data published for 2014, which includes 3,134,610 individuals. We focus on the foreign-born population, identified using the "NATIVITY" variable in the data, which consists of 360,677 individuals.** 
+ ** We look at the top countries of origin for foreign-born individuals in the United States. We use data from the American Community Survey (ACS) published by the Census Bureau.** 
 \
 \
 
